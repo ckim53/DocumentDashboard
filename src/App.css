@@ -201,3 +201,13 @@ body {
   font-style: italic;
   margin-top: 0.5rem;
 }
+
+.file-link {
+  color: #6366f1;
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.file-link:hover {
+  text-decoration: underline;
+}

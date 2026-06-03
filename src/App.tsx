@@ -17,6 +17,8 @@ interface Document {
   title: string;
   description: string;
   tags: string[];
+  fileUrl: string | null;
+  fileName: string | null;
   createdAt: string;
   updatedAt: string | null;
 }
@@ -25,10 +27,12 @@ interface FormState {
   title: string;
   description: string;
   tags: string;
+  file: File | null;
 }
 
 interface ValidationErrors {
   title?: string;
+  file?: string;
   [key: string]: string | undefined;
 }
 
@@ -38,6 +42,7 @@ export default function App() {
     title: "",
     description: "",
     tags: "",
+    file: null,
   });
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [tagFilter, setTagFilter] = useState("");
@@ -57,9 +62,7 @@ export default function App() {
       setDocuments(data);
       setFetched(true);
     } catch {
-      setApiError(
-        "Could not reach the API. Make sure the backend is running on port 5000."
-      );
+      setApiError("Could not reach the API.");
     } finally {
       setLoading(false);
     }
@@ -68,18 +71,32 @@ export default function App() {
   const handleCreate = async () => {
     setErrors({});
     setApiError("");
+
+    // Client-side file validation
+    if (!form.file) {
+      setErrors({ file: "A PDF file is required" });
+      return;
+    }
+    if (form.file.type !== "application/pdf") {
+      setErrors({ file: "Only PDF files are accepted" });
+      return;
+    }
+    if (form.file.size > 10 * 1024 * 1024) {
+      setErrors({ file: "File size cannot exceed 10MB" });
+      return;
+    }
+
     try {
+      const formData = new FormData();
+      formData.append("title", form.title);
+      formData.append("description", form.description);
+      formData.append("tags", form.tags);
+      formData.append("file", form.file);
+
       const res = await fetch(`${API_BASE}/documents`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: form.title,
-          description: form.description,
-          tags: form.tags
-            .split(",")
-            .map((t) => t.trim())
-            .filter(Boolean),
-        }),
+        body: formData,
+        // No Content-Type header — browser sets it automatically with the correct boundary for multipart
       });
 
       if (res.status === 400) {
@@ -94,7 +111,7 @@ export default function App() {
         return;
       }
 
-      setForm({ title: "", description: "", tags: "" });
+      setForm({ title: "", description: "", tags: "", file: null });
       fetchDocuments(tagFilter || undefined);
     } catch {
       setApiError("Failed to create document.");
@@ -165,6 +182,17 @@ export default function App() {
               value={form.tags}
               onChange={(e) => setForm({ ...form, tags: e.target.value })}
             />
+            <div className="field">
+              <input
+                type="file"
+                accept="application/pdf"
+                className={errors.file ? "input error" : "input"}
+                onChange={(e) =>
+                  setForm({ ...form, file: e.target.files?.[0] ?? null })
+                }
+              />
+              {errors.file && <span className="error-msg">{errors.file}</span>}
+            </div>
             <button className="btn-primary" onClick={handleCreate}>
               Create
             </button>
@@ -202,6 +230,7 @@ export default function App() {
                   <th>Title</th>
                   <th>Description</th>
                   <th>Tags</th>
+                  <th>File</th>
                   <th>Created</th>
                   <th></th>
                 </tr>
@@ -222,6 +251,20 @@ export default function App() {
                           </span>
                         ))}
                       </div>
+                    </td>
+                    <td>
+                      {doc.fileUrl ? (
+                        <a
+                          href={doc.fileUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="file-link"
+                        >
+                          {doc.fileName ?? "Download"}
+                        </a>
+                      ) : (
+                        <span className="muted">—</span>
+                      )}
                     </td>
                     <td className="muted">
                       {new Date(doc.createdAt).toLocaleDateString()}
