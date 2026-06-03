@@ -10,7 +10,7 @@ import {
 } from "recharts";
 import "./App.css";
 
-const API_BASE = "http://localhost:5000";
+const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:5000";
 
 interface Document {
   id: number;
@@ -34,7 +34,11 @@ interface ValidationErrors {
 
 export default function App() {
   const [documents, setDocuments] = useState<Document[]>([]);
-  const [form, setForm] = useState<FormState>({ title: "", description: "", tags: "" });
+  const [form, setForm] = useState<FormState>({
+    title: "",
+    description: "",
+    tags: "",
+  });
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [tagFilter, setTagFilter] = useState("");
   const [loading, setLoading] = useState(false);
@@ -53,7 +57,9 @@ export default function App() {
       setDocuments(data);
       setFetched(true);
     } catch {
-      setApiError("Could not reach the API. Make sure the backend is running on port 5000.");
+      setApiError(
+        "Could not reach the API. Make sure the backend is running on port 5000."
+      );
     } finally {
       setLoading(false);
     }
@@ -69,7 +75,10 @@ export default function App() {
         body: JSON.stringify({
           title: form.title,
           description: form.description,
-          tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
+          tags: form.tags
+            .split(",")
+            .map((t) => t.trim())
+            .filter(Boolean),
         }),
       });
 
@@ -77,10 +86,9 @@ export default function App() {
         const body = await res.json();
         setErrors(
           Object.fromEntries(
-            Object.entries(body.errors as Record<string, string[]>).map(([k, v]) => [
-              k.toLowerCase(),
-              v[0],
-            ])
+            Object.entries(body.errors as Record<string, string[]>).map(
+              ([k, v]) => [k.toLowerCase(), v[0]]
+            )
           )
         );
         return;
@@ -105,7 +113,10 @@ export default function App() {
       return acc;
     }, {});
 
-  const chartData = Object.entries(tagCounts).map(([tag, count]) => ({ tag, count }));
+  const chartData = Object.entries(tagCounts).map(([tag, count]) => ({
+    tag,
+    count,
+  }));
 
   const COLORS = ["#6366f1", "#8b5cf6", "#a78bfa", "#c4b5fd", "#ddd6fe"];
 
@@ -119,7 +130,9 @@ export default function App() {
     <div className="app">
       <header className="header">
         <h1>Document Dashboard</h1>
-        <p className="subtitle">Connected to DocumentManagerApi · ASP.NET Core + C#</p>
+        <p className="subtitle">
+          Connected to DocumentManagerApi · ASP.NET Core + C#
+        </p>
       </header>
 
       <main className="main">
@@ -134,13 +147,17 @@ export default function App() {
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
               />
-              {errors.title && <span className="error-msg">{errors.title}</span>}
+              {errors.title && (
+                <span className="error-msg">{errors.title}</span>
+              )}
             </div>
             <input
               className="input"
               placeholder="Description"
               value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              onChange={(e) =>
+                setForm({ ...form, description: e.target.value })
+              }
             />
             <input
               className="input"
@@ -165,7 +182,10 @@ export default function App() {
               value={tagFilter}
               onChange={(e) => setTagFilter(e.target.value)}
             />
-            <button className="btn-secondary" onClick={() => fetchDocuments(tagFilter || undefined)}>
+            <button
+              className="btn-secondary"
+              onClick={() => fetchDocuments(tagFilter || undefined)}
+            >
               {loading ? "Loading..." : fetched ? "Refresh" : "Load Documents"}
             </button>
           </div>
@@ -190,12 +210,16 @@ export default function App() {
                 {filtered.map((doc) => (
                   <tr key={doc.id}>
                     <td className="muted">{doc.id}</td>
-                    <td><strong>{doc.title}</strong></td>
+                    <td>
+                      <strong>{doc.title}</strong>
+                    </td>
                     <td className="muted">{doc.description || "—"}</td>
                     <td>
                       <div className="tags">
                         {doc.tags.map((t) => (
-                          <span key={t} className="tag">{t}</span>
+                          <span key={t} className="tag">
+                            {t}
+                          </span>
                         ))}
                       </div>
                     </td>
@@ -203,7 +227,10 @@ export default function App() {
                       {new Date(doc.createdAt).toLocaleDateString()}
                     </td>
                     <td>
-                      <button className="btn-delete" onClick={() => handleDelete(doc.id)}>
+                      <button
+                        className="btn-delete"
+                        onClick={() => handleDelete(doc.id)}
+                      >
                         Delete
                       </button>
                     </td>
@@ -219,7 +246,10 @@ export default function App() {
           <section className="card">
             <h2>Tags Overview</h2>
             <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+              <BarChart
+                data={chartData}
+                margin={{ top: 10, right: 20, left: 0, bottom: 0 }}
+              >
                 <XAxis dataKey="tag" tick={{ fontSize: 13 }} />
                 <YAxis allowDecimals={false} tick={{ fontSize: 13 }} />
                 <Tooltip />
